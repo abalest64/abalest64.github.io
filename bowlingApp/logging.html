@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>PinPal Pro - Integrated</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #f0f4f8;
+            padding: 20px;
+            color: #2d3748;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+
+        .global-nav {
+            background: #1a202c;
+            padding: 10px 20px;
+            margin: -20px -20px 20px -20px;
+            display: flex;
+            justify-content: flex-start;
+        }
+
+        .btn-home {
+            background: #4a5568;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .max-header {
+            background: #2d3748;
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 4px solid #3182ce;
+        }
+
+        .max-val {
+            font-size: 28px;
+            font-weight: 900;
+            color: #63b3ed;
+        }
+
+        .nav-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .pin-container {
+            display: grid;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+
+        .row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .pin {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .pin.knocked {
+            background: #cbd5e0;
+            color: #718096;
+            border-color: #cbd5e0;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+            margin: auto;
+        }
+
+        .btn {
+            padding: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+        }
+
+        .btn-strike {
+            background: #2d3748;
+            color: white;
+        }
+
+        .btn-confirm {
+            background: #3182ce;
+            color: white;
+        }
+
+        .btn-dashboard {
+            background: #e2e8f0;
+            color: #4a5568;
+        }
+
+        .btn-new {
+            background: #38a169;
+            color: white;
+            width: 100%;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #cbd5e0;
+            color: #a0aec0;
+            font-size: 12px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            text-align: center;
+            table-layout: fixed;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        th {
+            background: #2d3748;
+            color: white;
+            padding: 10px;
+            font-size: 11px;
+            text-transform: uppercase;
+        }
+
+        td {
+            border: 1px solid #e2e8f0;
+            padding: 10px;
+            vertical-align: top;
+        }
+
+        .score-box {
+            font-size: 13px;
+            font-weight: bold;
+            color: #4a5568;
+            margin-bottom: 5px;
+        }
+
+        .running-total {
+            font-size: 16px;
+            color: #2b6cb0;
+            font-weight: bold;
+        }
+
+        #gameView,
+        #dashboardView {
+            display: none;
+        }
+
+        .active {
+            display: block !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="global-nav">
+        <a href="user_dashboard.html" class="btn-home">⌂ Main Dashboard</a>
+    </div>
+
+    <div class="container">
+        <div id="dashboardView" class="active">
+            <h2 style="text-align:center;">PinPal Sessions</h2>
+            <button class="btn btn-new" onclick="showGame()">+ Start New Game</button>
+            <div class="card">
+                <h3>Recent History</h3>
+                <table style="table-layout: auto;">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Score</th>
+                            <th>Clean</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody"></tbody>
+                </table>
+                <button class="btn btn-outline" onclick="clearHistory()">Clear Data</button>
+            </div>
+        </div>
+
+        <div id="gameView">
+            <div class="nav-bar">
+                <button class="btn btn-dashboard" onclick="showDashboard()">← PinPal History</button>
+            </div>
+
+            <div class="max-header">
+                <div>
+                    <span style="text-transform: uppercase; font-size: 10px; letter-spacing: 1px; opacity: 0.8;">Max
+                        Possible</span>
+                    <div id="maxPossibleDisplay" class="max-val">300</div>
+                </div>
+                <div style="text-align: right;">
+                    <span id="ballLabel"
+                        style="background:rgba(255,255,255,0.2); padding:4px 10px; border-radius:10px; font-size:11px;">Ball
+                        1</span>
+                    <div id="displayFrame" style="font-weight:bold; margin-top:5px;">Frame 1</div>
+                </div>
+            </div>
+
+            <div id="loggerInterface" class="card">
+                <div id="pinArea">
+                    <div class="pin-container">
+                        <div class="row">
+                            <div class="pin" id="p7" onclick="togglePin(7)">7</div>
+                            <div class="pin" id="p8" onclick="togglePin(8)">8</div>
+                            <div class="pin" id="p9" onclick="togglePin(9)">9</div>
+                            <div class="pin" id="p10" onclick="togglePin(10)">10</div>
+                        </div>
+                        <div class="row">
+                            <div class="pin" id="p4" onclick="togglePin(4)">4</div>
+                            <div class="pin" id="p5" onclick="togglePin(5)">5</div>
+                            <div class="pin" id="p6" onclick="togglePin(6)">6</div>
+                        </div>
+                        <div class="row">
+                            <div class="pin" id="p2" onclick="togglePin(2)">2</div>
+                            <div class="pin" id="p3" onclick="togglePin(3)">3</div>
+                        </div>
+                        <div class="row">
+                            <div class="pin" id="p1" onclick="togglePin(1)">1</div>
+                        </div>
+                    </div>
+                    <div class="controls">
+                        <button id="strikeBtn" class="btn btn-strike" onclick="quickStrike()">STRIKE (X)</button>
+                        <button id="nextBtn" class="btn btn-confirm" onclick="submitBall()">Confirm Throw</button>
+                    </div>
+                </div>
+                <div id="finalScoreArea" style="display:none; text-align:center;"></div>
+            </div>
+
+            <table>
+                <tr>
+                    <th>1</th>
+                    <th>2</th>
+                    <th>3</th>
+                    <th>4</th>
+                    <th>5</th>
+                    <th>6</th>
+                    <th>7</th>
+                    <th>8</th>
+                    <th>9</th>
+                    <th>10</th>
+                    <th>Total</th>
+                </tr>
+                <tr>
+                    <td id="f1">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f2">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f3">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f4">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f5">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f6">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f7">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f8">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f9">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="f10">
+                        <div class="score-box"></div>
+                        <div class="running-total"></div>
+                    </td>
+                    <td id="grandTotal"
+                        style="font-weight:bold; font-size: 20px; vertical-align: middle; background: #edf2f7;">0</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        let frame = 1, ball = 1, rollData = [], displayData = Array(11).fill(""), firstBallPins = 0;
+        window.onload = updateHistoryUI;
+
+        function showGame() {
+            resetCurrentGame();
+            document.getElementById('dashboardView').classList.remove('active');
+            document.getElementById('gameView').classList.add('active');
+        }
+
+        function showDashboard() {
+            document.getElementById('gameView').classList.remove('active');
+            document.getElementById('dashboardView').classList.add('active');
+            updateHistoryUI();
+        }
+
+        function resetCurrentGame() {
+            frame = 1; ball = 1; rollData = []; displayData = Array(11).fill(""); firstBallPins = 0;
+            resetPins();
+            // Restore visibility of pins and hide final score
+            document.getElementById('pinArea').style.display = 'block';
+            document.getElementById('finalScoreArea').style.display = 'none';
+            document.querySelectorAll('.score-box, .running-total').forEach(el => el.innerText = "");
+            document.getElementById('grandTotal').innerText = "0";
+            document.getElementById('maxPossibleDisplay').innerText = "300";
+            updateUI();
+        }
+
+        function togglePin(id) { document.getElementById('p' + id).classList.toggle('knocked'); }
+        function quickStrike() { document.querySelectorAll('.pin').forEach(p => p.classList.add('knocked')); submitBall(); }
+        function resetPins() { document.querySelectorAll('.pin').forEach(p => p.classList.remove('knocked')); }
+
+        function submitBall() {
+            let totalKnocked = document.querySelectorAll('.pin.knocked').length;
+            let currentHit = (ball === 1) ? totalKnocked : (totalKnocked - firstBallPins);
+            if (frame === 10 && ball > 1 && firstBallPins === 10) currentHit = totalKnocked;
+
+            if (ball === 1) {
+                firstBallPins = currentHit; rollData.push(currentHit);
+                if (frame < 10) {
+                    if (currentHit === 10) { displayData[frame] = "X"; advanceFrame(); }
+                    else { displayData[frame] = currentHit; ball = 2; updateUI(); }
+                } else {
+                    displayData[10] = (currentHit === 10 ? "X" : currentHit); ball = 2;
+                    if (currentHit === 10) resetPins(); updateUI();
+                }
+            } else if (ball === 2) {
+                rollData.push(currentHit);
+                if (frame < 10) {
+                    displayData[frame] += " | " + (totalKnocked === 10 ? "/" : currentHit); advanceFrame();
+                } else {
+                    let sym = (totalKnocked === 10 && firstBallPins < 10) ? "/" : (currentHit === 10 ? "X" : currentHit);
+                    displayData[10] += " | " + sym;
+                    if (totalKnocked >= 10) { ball = 3; resetPins(); updateUI(); } else endGame();
+                }
+            } else {
+                rollData.push(totalKnocked); displayData[10] += " | " + (totalKnocked === 10 ? "X" : totalKnocked); endGame();
+            }
+            calculateScore();
+        }
+
+        function advanceFrame() { frame++; ball = 1; firstBallPins = 0; resetPins(); updateUI(); }
+        function updateUI() {
+            document.getElementById('displayFrame').innerText = "Frame " + frame;
+            document.getElementById('ballLabel').innerText = "Ball " + ball;
+            const sBtn = document.getElementById('strikeBtn');
+            if (sBtn) sBtn.style.visibility = (ball === 1 || (frame === 10 && document.querySelectorAll('.pin.knocked').length === 0)) ? "visible" : "hidden";
+        }
+
+        function calculateScore() {
+            let total = 0, rIdx = 0;
+            for (let f = 1; f <= 10; f++) {
+                let fScore = 0;
+                if (f < 10) {
+                    if (rollData[rIdx] === 10) {
+                        fScore = 10 + (rollData[rIdx + 1] || 0) + (rollData[rIdx + 2] || 0);
+                        rIdx++;
+                    } else {
+                        let b1 = rollData[rIdx] || 0;
+                        let b2 = rollData[rIdx + 1] || 0;
+                        fScore = b1 + b2;
+                        if (b1 + b2 === 10) fScore += (rollData[rIdx + 2] || 0);
+                        rIdx += 2;
+                    }
+                } else {
+                    fScore = (rollData[rIdx] || 0) + (rollData[rIdx + 1] || 0) + (rollData[rIdx + 2] || 0);
+                }
+                if (displayData[f] !== "") {
+                    total += fScore;
+                    document.getElementById('f' + f).querySelector('.score-box').innerText = displayData[f];
+                    document.getElementById('f' + f).querySelector('.running-total').innerText = total;
+                }
+            }
+            document.getElementById('grandTotal').innerText = total;
+
+            let sim = [...rollData];
+            if (frame < 10 && ball === 2) sim.push(10 - firstBallPins);
+            else if (frame === 10) { if (ball === 2) { sim.push(10); sim.push(10); } else if (ball === 3) sim.push(10); }
+            while (sim.length < 21) sim.push(10);
+            let maxT = 0, mIdx = 0;
+            for (let f = 1; f <= 10; f++) {
+                if (f < 10) {
+                    if (sim[mIdx] === 10) { maxT += 10 + sim[mIdx + 1] + sim[mIdx + 2]; mIdx++; }
+                    else { maxT += sim[mIdx] + sim[mIdx + 1]; if (sim[mIdx] + sim[mIdx + 1] === 10) maxT += sim[mIdx + 2]; mIdx += 2; }
+                } else { maxT += sim[mIdx] + sim[mIdx + 1] + sim[mIdx + 2]; }
+            }
+            document.getElementById('maxPossibleDisplay').innerText = maxT;
+        }
+
+        function endGame() {
+            calculateScore();
+            const finalScore = document.getElementById('grandTotal').innerText;
+            const clean = displayData.filter(d => d.toString().includes('X') || d.toString().includes('/')).length;
+            let hist = JSON.parse(localStorage.getItem('bowlingHistory') || '[]');
+            hist.push({ date: new Date().toLocaleDateString(), score: finalScore, clean: clean });
+            localStorage.setItem('bowlingHistory', JSON.stringify(hist));
+
+            // Toggle visibility instead of overwriting HTML
+            document.getElementById('pinArea').style.display = 'none';
+            const fsa = document.getElementById('finalScoreArea');
+            fsa.style.display = 'block';
+            fsa.innerHTML = `<h2>Final Score: ${finalScore}</h2><button class="btn btn-confirm" style="width:100%" onclick="showDashboard()">Save and Close</button>`;
+            updateHistoryUI();
+        }
+
+        function updateHistoryUI() {
+            let hist = JSON.parse(localStorage.getItem('bowlingHistory') || '[]');
+            document.getElementById('historyBody').innerHTML = hist.reverse().map(g => `<tr><td>${g.date}</td><td><b>${g.score}</b></td><td>${g.clean}/10</td></tr>`).join('') || '<tr><td colspan="3">No games logged yet</td></tr>';
+        }
+
+        function clearHistory() { if (confirm("Clear history?")) { localStorage.removeItem('bowlingHistory'); updateHistoryUI(); } }
+    </script>
+</body>
+
+</html>

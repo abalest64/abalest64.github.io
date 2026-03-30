@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head><title>Schedule Session</title></head>
+<body style="font-family: sans-serif; padding: 30px;">
+    <h1>Schedule Session</h1>
+    <p>Student: <b id="displayEmail"></b></p>
+    <hr>
+    <form id="scheduleForm">
+        <p><label><b>Session Type:</b></label><br>
+            <select id="eventType" style="padding:10px; width:300px;">
+                <option value="One-on-One Practice">One-on-One Practice</option>
+                <option value="Meeting">Meeting with Coach</option>
+            </select></p>
+        <p><label><b>Date and Time:</b></label><br>
+            <input type="datetime-local" id="eventDate" style="padding:10px; width:280px;" required></p>
+        <p><label><b>Notes for Coach:</b></label><br>
+            <textarea id="notes" style="padding:10px; width:280px;" placeholder="What do you want to cover?"></textarea></p>
+        <button type="submit" style="padding:15px 30px; background-color:navy; color:white; border:none; cursor:pointer;">Confirm & Email Coach</button>
+    </form>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const email = params.get('email') || "User";
+        document.getElementById('displayEmail').innerText = email;
+        if (params.get('type') === 'Meeting') { document.getElementById('eventType').value = "Meeting"; }
+        document.getElementById('scheduleForm').onsubmit = function (e) {
+            e.preventDefault();
+            const type = document.getElementById('eventType').value;
+            const date = new Date(document.getElementById('eventDate').value).toLocaleString();
+            const noteText = document.getElementById('notes').value;
+            window.location.href = `mailto:coach@msmary.edu?subject=${type} Request - ${email}&body=Coach,\n\nI want to schedule a ${type}.\nTime: ${date}\nNotes: ${noteText}`;
+        };
+    </script>
+</body></html>

@@ -1,0 +1,34 @@
+<html><head><script src="https://cdn.jsdelivr.net/npm/chart.js"></script></head>
+<body>
+    <h1>Statistics</h1>
+    <ul>
+        <li>Avg: <span id="p-avg"></span></li>
+        <li>Strike: <span id="p-strike"></span></li>
+        <li>Spare: <span id="p-spare"></span></li>
+    </ul>
+    <canvas id="radarChart" style="max-width:400px"></canvas>
+    <canvas id="trendChart" style="max-width:600px"></canvas>
+    <script>
+        const email = new URLSearchParams(window.location.search).get('email');
+        async function load() {
+            const sRes = await fetch('/get-stats?email=' + email);
+            const s = await sRes.json();
+            document.getElementById('p-avg').innerText = s.season_avg;
+            document.getElementById('p-strike').innerText = s.strike_pct + '%';
+            document.getElementById('p-spare').innerText = s.spare_pct + '%';
+            new Chart(document.getElementById('radarChart'), {
+                type: 'radar',
+                data: { labels: ['Strike', 'Spare', 'Single', 'Split', 'Fill'], 
+                datasets: [{ label: 'Stats', data: [s.strike_pct, s.spare_pct, s.single_pin_pct, s.split_pct, s.fill_pct] }]}
+            });
+            const tRes = await fetch('/api/trend?email=' + email);
+            const t = await tRes.json();
+            new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: { labels: t.map(d => d.tournament_name), 
+                datasets: [{ label: 'Trend', data: t.map(d => d.avg_score) }]}
+            });
+        }
+        window.onload = load;
+    </script>
+</body></html>

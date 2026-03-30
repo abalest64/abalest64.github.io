@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bowler Dashboard</title>
+</head>
+<body style="font-family: sans-serif; padding: 50px; text-align: center;">
+    <h1>Bowler Dashboard</h1>
+    <p>Welcome, <b id="userEmail"></b></p>
+    <hr>
+    <div style="display: flex; flex-direction: column; align-items: center; gap: 15px; margin-top: 30px;">
+        <button onclick="nav('/statistics')" style="width:300px; padding:15px; background:navy; color:white; border:none; cursor:pointer;">View Performance Statistics</button>
+        <button onclick="nav('/arsenal')" style="width:300px; padding:15px; background:#cc0000; color:white; border:none; cursor:pointer;">Arsenal Management</button>
+        <button onclick="nav('/contacts')" style="width:300px; padding:15px; background:#555; color:white; border:none; cursor:pointer;">Team Contact Directory</button>
+        <button onclick="nav('/logging')" style="width:300px; padding:15px; background:purple; color:white; border:none; cursor:pointer;">Game Logging (New)</button>
+        <button onclick="nav('/scheduling?type=Practice')" style="width:300px; padding:15px; background:green; color:white; border:none; cursor:pointer;">Schedule Practice</button>
+        <button onclick="nav('/scheduling?type=Meeting')" style="width:300px; padding:15px; background:gray; color:white; border:none; cursor:pointer;">Schedule Meeting</button>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const email = params.get('email') || "a.r.balest@email.msmary.edu";
+        document.getElementById('userEmail').innerText = email;
+
+        function nav(path) {
+            const connector = path.includes('?') ? '&' : '?';
+            window.location.href = path + connector + "email=" + encodeURIComponent(email);
+        }
+    </script>
+</body>
+</html>

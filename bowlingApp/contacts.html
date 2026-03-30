@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Contact Directory</title>
+</head>
+
+<body>
+    <h1>Team Contact Directory</h1>
+    <hr>
+
+    <label><b>Search Contacts:</b></label>
+    <input type="text" id="searchBox" onkeyup="filterContacts()" placeholder="Search names or roles...">
+    <br><br>
+
+    <table border="1" id="contactTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Role</th>
+                <th>Email</th>
+                <th>Phone</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Alyssa Balest</td>
+                <td>Player</td>
+                <td>a.r.balest@email.msmary.edu</td>
+                <td>555-0123</td>
+            </tr>
+            <tr>
+                <td>Coach Smith</td>
+                <td>Head Coach</td>
+                <td>coach@msmary.edu</td>
+                <td>555-9876</td>
+            </tr>
+            <tr>
+                <td>Sierra Calo</td>
+                <td>Player</td>
+                <td>s.calo@email.msmary.edu</td>
+                <td>555-4444</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script>
+        function filterContacts() {
+            const input = document.getElementById('searchBox').value.toLowerCase();
+            const rows = document.getElementById('contactTable').getElementsByTagName('tr');
+
+            for (let i = 1; i < rows.length; i++) {
+                const rowText = rows[i].innerText.toLowerCase();
+                rows[i].style.display = rowText.includes(input) ? '' : 'none';
+            }
+        }
+    </script>
+</body>
+
+</html>
