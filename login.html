@@ -1,0 +1,20 @@
+<html>
+
+<body>
+    <h1>Login</h1>
+    <input type="email" id="email" value="a.r.balest@email.msmary.edu">
+    <button onclick="login()">Login</button>
+    <script>
+        async function login() {
+            const email = document.getElementById('email').value;
+            const res = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            if ((await res.json()).success) window.location.href = '/user-profile?email=' + email;
+        }
+    </script>
+</body>
+
+</html>
