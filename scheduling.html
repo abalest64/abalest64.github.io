@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Schedule Session</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="mount-icon-192.png">
+    <meta name="theme-color" content="#0b5c7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PinPoint Bowling">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <script src="pwa.js"></script>
+    <script src="app-shell.js"></script>
+</head>
+
+<body class="scheduling-page">
+    <div class="content-shell">
+        <section class="panel">
+            <span class="eyebrow">Scheduling</span>
+            <h1>Meeting Times</h1>
+            <p id="scheduleIntro">Loading scheduling tools...</p>
+        </section>
+
+        <section class="panel split-grid">
+            <div class="stack">
+                <div id="playerRequestPanel">
+                    <h2>Request Appointment</h2>
+                    <form id="requestForm">
+                        <div class="field-group">
+                            <label for="slotSelect">Available Coach Time</label>
+                            <select id="slotSelect"></select>
+                        </div>
+                        <div class="field-group">
+                            <label for="requestNotes">Notes for Coach</label>
+                            <textarea id="requestNotes" placeholder="What do you want to work on?"></textarea>
+                        </div>
+                        <div class="table-actions">
+                            <button type="submit">Request Appointment</button>
+                            <button class="secondary-button" type="button" onclick="saveDraft()">Save Draft</button>
+                        </div>
+                    </form>
+                </div>
+
+                <div id="coachAvailabilityPanel" class="hidden">
+                    <h2>Post Available Time</h2>
+                    <form id="availabilityForm" class="form-grid">
+                        <div>
+                            <label for="slotTitle">Meeting Title</label>
+                            <input id="slotTitle" value="One-on-One Check-In" required>
+                        </div>
+                        <div>
+                            <label for="slotDuration">Duration (minutes)</label>
+                            <input id="slotDuration" type="number" value="30" min="15" step="15" required>
+                        </div>
+                        <div class="full">
+                            <label for="slotStart">Start Time</label>
+                            <input id="slotStart" type="datetime-local" required>
+                        </div>
+                        <div class="full">
+                            <label for="slotNotes">Notes</label>
+                            <textarea id="slotNotes" placeholder="What should athletes prepare for?"></textarea>
+                        </div>
+                        <div class="full">
+                            <button type="submit">Post Availability</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="stack">
+                <div>
+                    <h2>Appointments</h2>
+                    <div id="appointmentList" class="data-list"></div>
+                </div>
+                <div>
+                    <h2>Available Times</h2>
+                    <div id="availabilityList" class="data-list"></div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let currentUser;
+        let slots = [];
+        let appointments = [];
+
+        function calendarLink(title, startIso, minutes, details) {
+            const start = new Date(startIso);
+            const end = new Date(start.getTime() + minutes * 60000);
+            const format = (date) => date.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+            const params = new URLSearchParams({
+                action: 'TEMPLATE',
+                text: title,
+                dates: `${format(start)}/${format(end)}`,
+                details
+            });
+            return `https://calendar.google.com/calendar/render?${params.toString()}`;
+        }
+
+        async function loadScheduling() {
+            const [slotData, appointmentData] = await Promise.all([
+                AppShell.fetchJson('/api/availability'),
+                AppShell.fetchJson('/api/appointments')
+            ]);
+            slots = slotData.slots;
+            appointments = appointmentData.appointments;
+            renderSlots();
+            renderAppointments();
+        }
+
+        function renderSlots() {
+            document.getElementById('slotSelect').innerHTML = slots.map((slot) => `
+                <option value="${slot.id}">${slot.title} • ${new Date(slot.start).toLocaleString()} • ${slot.durationMinutes} min</option>
+            `).join('') || '<option>No times posted yet</option>';
+
+            document.getElementById('availabilityList').innerHTML = slots.map((slot) => `
+                <div class="data-card">
+                    <strong>${slot.title}</strong>
+                    <span>${new Date(slot.start).toLocaleString()}</span>
+                    <span>${slot.durationMinutes} minutes</span>
+                    <span>${slot.notes || 'No additional notes.'}</span>
+                    ${currentUser.role === 'coach' ? `
+                        <div class="table-actions">
+                            <button class="secondary-button" type="button" onclick="deleteMeetingTime('${slot.id}')">Delete Time</button>
+                        </div>
+                    ` : ''}
+                </div>
+            `).join('') || '<div class="empty-state">No availability has been posted yet.</div>';
+        }
+
+        function renderAppointments() {
+            document.getElementById('appointmentList').innerHTML = appointments.map((appointment) => `
+                <div class="data-card">
+                    <strong>${appointment.title}</strong>
+                    <span>${new Date(appointment.start).toLocaleString()}</span>
+                    <span>Status: ${appointment.status}</span>
+                    <span>${appointment.notes || 'No notes provided.'}</span>
+                    <div class="table-actions">
+                        <a class="ghost-button" href="${calendarLink(appointment.title, appointment.start, appointment.durationMinutes, appointment.notes || '')}" target="_blank" rel="noreferrer">Add to Google Calendar</a>
+                        ${currentUser.role === 'coach' ? `<button class="secondary-button" type="button" onclick="confirmAppointment('${appointment.id}')">Confirm</button>` : ''}
+                        <button class="secondary-button" type="button" onclick="cancelAppointment('${appointment.id}')">Cancel Meeting</button>
+                    </div>
+                </div>
+            `).join('') || '<div class="empty-state">No appointments requested yet.</div>';
+        }
+
+        async function confirmAppointment(id) {
+            await AppShell.fetchJson(`/api/appointments/${id}`, {
+                method: 'PATCH',
+                body: JSON.stringify({ status: 'Confirmed' })
+            });
+            loadScheduling();
+        }
+
+        async function deleteMeetingTime(id) {
+            await AppShell.fetchJson(`/api/availability/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            });
+            loadScheduling();
+        }
+
+        async function cancelAppointment(id) {
+            await AppShell.fetchJson(`/api/appointments/${encodeURIComponent(id)}`, {
+                method: 'DELETE'
+            });
+            loadScheduling();
+        }
+
+        document.getElementById('requestForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await AppShell.fetchJson('/api/appointments', {
+                method: 'POST',
+                body: JSON.stringify({
+                    slotId: document.getElementById('slotSelect').value,
+                    notes: document.getElementById('requestNotes').value
+                })
+            });
+            localStorage.removeItem(`scheduleDraft:${currentUser.email}`);
+            document.getElementById('requestForm').reset();
+            loadScheduling();
+        });
+
+        document.getElementById('availabilityForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await AppShell.fetchJson('/api/availability', {
+                method: 'POST',
+                body: JSON.stringify({
+                    title: document.getElementById('slotTitle').value,
+                    start: document.getElementById('slotStart').value,
+                    durationMinutes: document.getElementById('slotDuration').value,
+                    notes: document.getElementById('slotNotes').value
+                })
+            });
+            document.getElementById('availabilityForm').reset();
+            loadScheduling();
+        });
+
+        function saveDraft() {
+            localStorage.setItem(`scheduleDraft:${currentUser.email}`, JSON.stringify({
+                notes: document.getElementById('requestNotes').value
+            }));
+        }
+
+        function loadDraft() {
+            const draft = JSON.parse(localStorage.getItem(`scheduleDraft:${currentUser.email}`) || 'null');
+            if (draft?.notes) document.getElementById('requestNotes').value = draft.notes;
+        }
+
+        AppShell.init({ active: 'scheduling' }).then((user) => {
+            currentUser = user;
+            document.getElementById('scheduleIntro').textContent = user.role === 'coach'
+                ? 'Post meeting times, review athlete requests, and confirm appointments.'
+                : 'Request practice check-ins, save drafts, and send confirmed times to Google Calendar.';
+            document.getElementById('coachAvailabilityPanel').classList.toggle('hidden', user.role !== 'coach');
+            document.getElementById('playerRequestPanel').classList.toggle('hidden', user.role === 'coach');
+            loadDraft();
+            loadScheduling();
+        });
+    </script>
+</body>
+
+</html>

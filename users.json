@@ -1,0 +1,50 @@
+[
+  {
+    "id": "user_coach_olivia",
+    "name": "Olivia Farwell",
+    "email": "o.l.farwell@msmary.edu",
+    "role": "coach",
+    "passwordHash": "5d7ce4682a36e4b4ef86e505b3c65fb535d2ab2be56cb184f775f3ab0a315a64",
+    "createdAt": "2026-03-30T00:00:00.000Z"
+  },
+  {
+    "id": "user_player_alyssa",
+    "name": "Alyssa Balest",
+    "email": "a.r.balest@email.msmary.edu",
+    "studentId": "202600123",
+    "usbcId": "987654321",
+    "role": "player",
+    "passwordHash": "ff01af256e649682500d15373d52734afed3318864f4658d00de93ad1b4307da",
+    "createdAt": "2026-03-30T00:00:00.000Z"
+  },
+  {
+    "id": "user_2f37a3f528d6590a",
+    "name": "alyssa balest",
+    "email": "test@email.edu",
+    "studentId": "7875673487",
+    "usbcId": "727484984",
+    "role": "player",
+    "passwordHash": "83bbd1badc13908b00e8274cddc24c7055dd8d08281cf7a1c1b896c7b8b2f66f",
+    "createdAt": "2026-04-23T05:58:56.394Z"
+  },
+  {
+    "id": "user_544162ff328a949d",
+    "name": "test",
+    "email": "test@email.msmary.edu",
+    "studentId": "6377464",
+    "usbcId": "8384746",
+    "role": "player",
+    "passwordHash": "3530f6068d117aaad50588ee4589c0ef6e24fdfe77888c7016d15a71fbe81157",
+    "createdAt": "2026-05-11T16:07:14.611Z"
+  },
+  {
+    "id": "user_e0077f1ad65539c1",
+    "name": "Alyssa Balest",
+    "email": "alyssabalest8@gmail.com",
+    "studentId": "82394784",
+    "usbcId": "29849493",
+    "role": "player",
+    "passwordHash": "3530f6068d117aaad50588ee4589c0ef6e24fdfe77888c7016d15a71fbe81157",
+    "createdAt": "2026-08-23T00:45:03.947Z"
+  }
+]

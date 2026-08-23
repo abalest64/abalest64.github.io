@@ -1,0 +1,38 @@
+[
+  {
+    "id": "game_bd91274e243ee43f",
+    "ownerEmail": "a.r.balest@email.msmary.edu",
+    "label": "Game 5/11/2026",
+    "date": "5/11/2026",
+    "score": 169,
+    "clean": 7,
+    "rolls": [
+      10,
+      10,
+      9,
+      1,
+      6,
+      4,
+      10,
+      10,
+      3,
+      3,
+      0,
+      0,
+      5,
+      4,
+      10,
+      10,
+      10
+    ],
+    "summary": {
+      "strikes": 5,
+      "spares": 2,
+      "opens": 3,
+      "strikeRate": 50,
+      "spareRate": 40,
+      "firstBallAverage": 7.3
+    },
+    "createdAt": "2026-05-11T16:21:18.714Z"
+  }
+]

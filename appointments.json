@@ -1,0 +1,13 @@
+[
+  {
+    "id": "appt_efffe2083b88ebf3",
+    "slotId": "slot_e3be7b9eb478f41b",
+    "title": "One-on-One Check-In",
+    "coachEmail": "o.l.farwell@msmary.edu",
+    "playerEmail": "a.r.balest@email.msmary.edu",
+    "start": "2026-05-27T16:15:00.000Z",
+    "durationMinutes": 45,
+    "notes": "",
+    "status": "Confirmed"
+  }
+]

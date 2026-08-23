@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Arsenal Management</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="mount-icon-192.png">
+    <meta name="theme-color" content="#0b5c7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PinPoint Bowling">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <script src="pwa.js"></script>
+    <script src="app-shell.js"></script>
+</head>
+
+<body class="arsenal-page">
+    <div class="content-shell">
+        <section class="panel">
+            <span class="eyebrow">Equipment</span>
+            <h1>Arsenal Management</h1>
+            <p id="arsenalIntro">Loading arsenal data...</p>
+            <div class="mini-grid">
+                <div class="mini-card"><span class="muted">Total pieces</span><strong id="totalBalls">0</strong></div>
+            </div>
+        </section>
+
+        <section class="panel split-grid">
+            <div class="stack">
+                <div id="coachPlayerPicker" class="hidden">
+                    <label for="playerSelect">Review Player Arsenal</label>
+                    <select id="playerSelect" onchange="loadArsenal(this.value)"></select>
+                </div>
+                <div>
+                    <h3>Add New Equipment</h3>
+                    <form id="ballForm">
+                        <label>Ball Name:</label>
+                        <input type="text" id="ballName" placeholder="e.g. Phaze II" required>
+                        <br><br>
+                        <label>Serial Number:</label>
+                        <input type="text" id="ballSerialNumber" placeholder="e.g. ARP51134" required>
+                        <br><br>
+                        <label>Weight:</label>
+                        <input type="text" id="ballWeight" placeholder="e.g. 15lb" required>
+                        <br><br>
+                        <label>Layout/Notes:</label>
+                        <input type="text" id="ballNotes" placeholder="e.g. 4x4x2">
+                        <br><br>
+                        <button type="submit">Add to Arsenal</button>
+                    </form>
+                    <p id="arsenalStatus" class="muted"></p>
+                </div>
+            </div>
+
+            <div class="stack">
+                <div class="panel-header">
+                    <h3>Coach Review Notes</h3>
+                    <button class="ghost-button" type="button" onclick="exportArsenal()">Export CSV</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <table id="arsenalTable">
+                <thead>
+                    <tr>
+                        <th>Ball Name</th>
+                        <th>Serial Number</th>
+                        <th>Weight</th>
+                        <th>Notes</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        let currentUser;
+        let currentOwnerEmail;
+        let arsenal = [];
+
+        function csvValue(value) {
+            return `"${String(value ?? '').replace(/"/g, '""')}"`;
+        }
+
+        async function loadPlayerOptions() {
+            const data = await AppShell.fetchJson('/api/users');
+            const players = data.users.filter((user) => user.role === 'player');
+            document.getElementById('playerSelect').innerHTML = players.map((player) => `
+                <option value="${player.email}">${player.name} • ${player.email}</option>
+            `).join('');
+            if (players[0]) loadArsenal(players[0].email);
+        }
+
+        async function loadArsenal(ownerEmail = currentUser.email) {
+            currentOwnerEmail = ownerEmail;
+            const data = await AppShell.fetchJson(`/api/arsenal?email=${encodeURIComponent(ownerEmail)}`);
+            arsenal = data.arsenal;
+            document.getElementById('arsenalIntro').textContent = `Viewing arsenal for ${data.ownerEmail}.`;
+            renderArsenal();
+        }
+
+        function renderArsenal() {
+            document.querySelector('#arsenalTable tbody').innerHTML = arsenal.map((ball) => `
+                <tr>
+                    <td>${ball.name}</td>
+                    <td>${ball.serialNumber || '-'}</td>
+                    <td>${ball.weight}</td>
+                    <td>${ball.notes}</td>
+                    <td><button type="button" class="ghost-button" data-delete-ball="${ball.id}">Delete</button></td>
+                </tr>
+            `).join('');
+            document.getElementById('totalBalls').innerText = arsenal.length;
+        }
+
+        async function deleteBall(ballId) {
+            const status = document.getElementById('arsenalStatus');
+            try {
+                await AppShell.fetchJson(`/api/arsenal/${encodeURIComponent(ballId)}`, {
+                    method: 'DELETE'
+                });
+                arsenal = arsenal.filter((ball) => ball.id !== ballId);
+                renderArsenal();
+                status.textContent = 'Piece removed from the arsenal.';
+                status.className = 'success-text';
+                await loadArsenal(currentOwnerEmail);
+            } catch (error) {
+                status.textContent = error.message || 'Could not remove that piece.';
+                status.className = 'error-text';
+            }
+        }
+
+        document.getElementById('ballForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const name = document.getElementById('ballName').value.trim();
+            const serialNumber = document.getElementById('ballSerialNumber').value.trim();
+            const weight = document.getElementById('ballWeight').value.trim();
+            const notes = document.getElementById('ballNotes').value.trim();
+            const status = document.getElementById('arsenalStatus');
+
+            try {
+                const response = await AppShell.fetchJson('/api/arsenal', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        ownerEmail: currentOwnerEmail,
+                        name,
+                        serialNumber,
+                        weight,
+                        notes
+                    })
+                });
+
+                arsenal.push(response.item);
+                renderArsenal();
+                document.getElementById('ballForm').reset();
+                status.textContent = `"${response.item.name}" added to the arsenal.`;
+                status.className = 'success-text';
+                await loadArsenal(currentOwnerEmail);
+            } catch (error) {
+                status.textContent = error.message || 'Could not add the new ball.';
+                status.className = 'error-text';
+            }
+        });
+
+        document.querySelector('#arsenalTable tbody').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-delete-ball]');
+            if (!button) return;
+            deleteBall(button.dataset.deleteBall);
+        });
+
+        function exportArsenal() {
+            const selectedOption = document.querySelector('#playerSelect option:checked');
+            const ownerLabel = currentUser.role === 'coach' && selectedOption
+                ? selectedOption.textContent
+                : `${currentUser.name} • ${currentUser.email}`;
+            const csv = [
+                [csvValue('PinPoint Bowling Arsenal Report')],
+                [csvValue('Player'), csvValue(ownerLabel)],
+                [csvValue('Generated'), csvValue(new Date().toLocaleString())],
+                [csvValue('Total Pieces'), csvValue(arsenal.length)],
+                [],
+                [csvValue('Equipment List')],
+                [csvValue('Ball Name'), csvValue('Serial Number'), csvValue('Weight'), csvValue('Layout / Notes')]
+            ]
+                .concat(arsenal.map((ball) => [
+                    csvValue(ball.name),
+                    csvValue(ball.serialNumber),
+                    csvValue(ball.weight),
+                    csvValue(ball.notes)
+                ]))
+                .map((row) => row.join(','))
+                .join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `arsenal-report-${currentOwnerEmail}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+        }
+
+        AppShell.init({ active: 'arsenal' }).then((user) => {
+            currentUser = user;
+            currentOwnerEmail = user.email;
+            if (user.role === 'coach') {
+                document.getElementById('coachPlayerPicker').classList.remove('hidden');
+                loadPlayerOptions();
+            } else {
+                loadArsenal(user.email);
+            }
+        });
+    </script>
+</body>
+
+</html>

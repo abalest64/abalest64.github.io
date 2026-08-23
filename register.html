@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Create Account</title>
+    <link rel="stylesheet" href="styles.css">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+</head>
+
+<body class="register-page">
+    <h2>Create New Account</h2>
+    <form id="standaloneRegisterForm">
+        <input type="text" name="name" id="name" placeholder="Full Name" required>
+        <br><br>
+        <input type="email" name="email" id="email" placeholder="Choose Email" required>
+        <br><br>
+        <input type="password" name="password" id="password" placeholder="Choose Password" required>
+        <br><br>
+        <button type="submit">Sign Up</button>
+    </form>
+    <br>
+    <a href="/">Already have an account? Login here</a>
+    <script>
+        document.getElementById('standaloneRegisterForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const res = await fetch('/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: document.getElementById('name').value,
+                    email: document.getElementById('email').value,
+                    password: document.getElementById('password').value
+                })
+            });
+
+            const data = await res.json();
+            if (!res.ok || !data.success) {
+                alert(data.message || 'Unable to create account.');
+                return;
+            }
+
+            window.location.href = `/?email=${encodeURIComponent(data.user.email)}`;
+        });
+    </script>
+</body>
+
+</html>

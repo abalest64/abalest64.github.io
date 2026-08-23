@@ -1,0 +1,34 @@
+[
+  {
+    "id": "ball_796a9e70b0a7655f",
+    "ownerEmail": "a.r.balest@email.msmary.edu",
+    "name": "Mesmerize",
+    "serialNumber": "ARP116638",
+    "weight": "14lb",
+    "notes": "Solid coverstock"
+  },
+  {
+    "id": "ball_a69f9f60f8515394",
+    "ownerEmail": "a.r.balest@email.msmary.edu",
+    "name": "Rhino Pro Pearl",
+    "serialNumber": "POU792846",
+    "weight": "14lb",
+    "notes": "Pearl benchmark"
+  },
+  {
+    "id": "ball_132631bf951f3e4f",
+    "ownerEmail": "a.r.balest@email.msmary.edu",
+    "name": "Hypnotize",
+    "serialNumber": "KYB982648",
+    "weight": "14lb",
+    "notes": "Hybrid piece"
+  },
+  {
+    "id": "ball_e38027fbb43ca59b",
+    "ownerEmail": "a.r.balest@email.msmary.edu",
+    "name": "Ethos Pearl",
+    "serialNumber": "JDK23456",
+    "weight": "14lb",
+    "notes": "Smooth motion"
+  }
+]

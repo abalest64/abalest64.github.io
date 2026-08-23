@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bowler Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="mount-icon-192.png">
+    <meta name="theme-color" content="#0b5c7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PinPoint Bowling">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <script src="pwa.js"></script>
+    <script src="app-shell.js"></script>
+</head>
+<body class="dashboard-page">
+    <div class="content-shell">
+        <section class="panel">
+            <div class="dashboard-topbar">
+                <div class="dashboard-greeting">
+                    <span class="eyebrow">Athlete Home</span>
+                    <h1 id="greetingTitle">Bowler Dashboard</h1>
+                    <p>Welcome, <b id="userEmail"></b></p>
+                </div>
+                <div class="dashboard-clock" id="dashboardClock"></div>
+            </div>
+
+            <input class="search-input" type="text" id="dashboardSearch" placeholder="Quick filter actions..." oninput="filterActions()">
+            <hr>
+            <div id="actionGrid">
+                <button onclick="nav('/statistics')">View Performance Statistics</button>
+                <button onclick="nav('/arsenal')">Arsenal Management</button>
+                <button onclick="nav('/contacts')">Team Contact Directory</button>
+                <button onclick="nav('/logging')">Game Logging</button>
+                <button onclick="nav('/scheduling?type=Practice')">Schedule Practice</button>
+                <button onclick="nav('/scheduling?type=Meeting')">Schedule Meeting</button>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="mini-grid">
+                <div class="mini-card"><span class="muted">Upcoming appointments</span><strong id="upcomingCount">0</strong></div>
+                <div class="mini-card"><span class="muted">Saved arsenal pieces</span><strong id="arsenalCount">0</strong></div>
+                <div class="mini-card"><span class="muted">Logged games</span><strong id="gameCount">0</strong></div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        let currentUser;
+
+        function nav(path) {
+            window.location.href = path;
+        }
+
+        function getGreeting() {
+            const hour = new Date().getHours();
+            if (hour < 12) return 'Good morning';
+            if (hour < 18) return 'Good afternoon';
+            return 'Good evening';
+        }
+
+        function renderClock() {
+            document.getElementById('dashboardClock').textContent = new Date().toLocaleString([], {
+                weekday: 'short',
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+
+        function filterActions() {
+            const query = document.getElementById('dashboardSearch').value.toLowerCase();
+            document.querySelectorAll('#actionGrid button').forEach((button) => {
+                button.classList.toggle('hidden-by-filter', !button.innerText.toLowerCase().includes(query));
+            });
+        }
+
+        async function loadOverview() {
+            const [appointments, arsenal, games] = await Promise.all([
+                AppShell.fetchJson('/api/appointments'),
+                AppShell.fetchJson('/api/arsenal'),
+                AppShell.fetchJson('/api/games')
+            ]);
+
+            document.getElementById('upcomingCount').textContent = appointments.appointments.filter((item) => item.status !== 'Cancelled').length;
+            document.getElementById('arsenalCount').textContent = arsenal.arsenal.length;
+            document.getElementById('gameCount').textContent = games.games.length;
+        }
+
+        AppShell.init({ active: 'home' }).then((user) => {
+            currentUser = user;
+            document.getElementById('userEmail').innerText = user.email;
+            document.getElementById('greetingTitle').innerText = `${getGreeting()}, ${user.name}`;
+            renderClock();
+            setInterval(renderClock, 1000);
+            loadOverview();
+        });
+    </script>
+</body>
+</html>

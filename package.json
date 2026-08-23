@@ -1,0 +1,16 @@
+{
+  "name": "mount-bowling-hub",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Senior project web application for the Mount St. Mary's Women's Bowling team",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

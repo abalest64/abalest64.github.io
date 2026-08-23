@@ -1,0 +1,26 @@
+[
+  {
+    "id": "slot_6825c247c1f0ca5b",
+    "coachEmail": "o.l.farwell@msmary.edu",
+    "title": "Meeting in Office",
+    "start": "2026-04-26T18:00:00.000Z",
+    "durationMinutes": 60,
+    "notes": "Talk about grades"
+  },
+  {
+    "id": "slot_3108552f85e655f6",
+    "coachEmail": "o.l.farwell@msmary.edu",
+    "title": "One-on-One Check-In",
+    "start": "2026-04-27T19:30:00.000Z",
+    "durationMinutes": 60,
+    "notes": "Office meeting"
+  },
+  {
+    "id": "slot_e3be7b9eb478f41b",
+    "coachEmail": "o.l.farwell@msmary.edu",
+    "title": "One-on-One Check-In",
+    "start": "2026-05-27T16:15:00.000Z",
+    "durationMinutes": 45,
+    "notes": ""
+  }
+]

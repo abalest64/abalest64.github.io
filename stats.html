@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Statistics</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="mount-icon-192.png">
+    <meta name="theme-color" content="#0b5c7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PinPoint Bowling">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <script src="pwa.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="app-shell.js"></script>
+</head>
+<body class="stats-page">
+    <div class="content-shell">
+        <section class="stat-panel">
+            <span class="eyebrow">Performance</span>
+            <h1>Statistics</h1>
+            <div class="hidden" id="coachStatsPicker">
+                <label for="playerStatsSelect"><b>Select Player:</b></label>
+                <select id="playerStatsSelect"></select>
+            </div>
+            <ul>
+                <li>Avg: <span id="p-avg">--</span></li>
+                <li>Strike: <span id="p-strike">--</span></li>
+                <li>Spare: <span id="p-spare">--</span></li>
+            </ul>
+            <div class="panel-header">
+                <div class="pill" id="insightTag">Loading insights...</div>
+                <div class="table-actions">
+                    <button class="ghost-button" type="button" onclick="runScrape()">Run NCAA Import</button>
+                    <button class="ghost-button" type="button" onclick="exportStats()">Export CSV</button>
+                    <button class="ghost-button" type="button" onclick="load()">Refresh</button>
+                </div>
+            </div>
+            <div class="chart-grid">
+                <div class="chart-card chart-card--stack">
+                    <div class="chart-frame chart-frame--short">
+                        <canvas id="barChart"></canvas>
+                    </div>
+                    <div class="chart-frame chart-frame--square">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-card">
+                    <div class="chart-frame chart-frame--tall">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2>Detailed Metrics</h2>
+                <span class="pill" id="statsStatus">Ready</span>
+            </div>
+            <table class="info-table">
+                <tbody id="statsTableBody"></tbody>
+            </table>
+        </section>
+    </div>
+    <script>
+        let currentUser;
+        let selectedEmail;
+        let barChart;
+        let radarChart;
+        let trendChart;
+        function splitTournamentLabel(label) {
+            if (!label) return { date: '', title: 'Unknown event' };
+            const match = label.match(/^(\d{2})-(\d{2})-(\d{2})\s+(.+)$/);
+            if (!match) return { date: '', title: toTitleCaseTournament(label) };
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const monthLabel = months[Number(match[2]) - 1] || match[2];
+            return {
+                date: `${monthLabel} ${Number(match[3])}`,
+                title: toTitleCaseTournament(match[4])
+            };
+        }
+        function formatTournamentTitle(label) {
+            return splitTournamentLabel(label).title;
+        }
+        function toTitleCaseTournament(name) {
+            const preserve = new Set(['CSU', 'JBI', 'ITC', 'USBC', 'NCAA']);
+            return name.split(' ').map((word) => {
+                if (preserve.has(word)) return word;
+                return word.charAt(0) + word.slice(1).toLowerCase();
+            }).join(' ');
+        }
+        function wrapLabel(text, size = 16) {
+            if (text === 'Mount Shootout') return ['Mount', 'Shootout'];
+            const words = text.split(' ');
+            const lines = [];
+            let current = '';
+            words.forEach((word) => {
+                const next = current ? `${current} ${word}` : word;
+                if (next.length > size && current) {
+                    lines.push(current);
+                    current = word;
+                } else {
+                    current = next;
+                }
+            });
+            if (current) lines.push(current);
+            return lines;
+        }
+        function formatTournamentLabel(label) {
+            const parts = splitTournamentLabel(label);
+            const wrappedTitle = wrapLabel(parts.title, 14);
+            return parts.date ? [...wrappedTitle, parts.date] : wrappedTitle;
+        }
+        async function load() {
+            if (!currentUser || !selectedEmail) return;
+            document.getElementById('insightTag').innerText = 'Loading insights...';
+            document.getElementById('statsStatus').innerText = 'Refreshing';
+            const s = await AppShell.fetchJson('/get-stats?email=' + encodeURIComponent(selectedEmail));
+            document.getElementById('p-avg').innerText = s.season_avg;
+            document.getElementById('p-strike').innerText = s.strike_pct + '%';
+            document.getElementById('p-spare').innerText = s.spare_pct + '%';
+            document.getElementById('insightTag').innerText = getInsight(s);
+            document.getElementById('statsTableBody').innerHTML = [
+                ['Season average', s.season_avg],
+                ['Strike percentage', `${s.strike_pct}%`],
+                ['Spare percentage', `${s.spare_pct}%`],
+                ['Single-pin percentage', `${s.single_pin_pct}%`],
+                ['Split conversion percentage', `${s.split_pct}%`],
+                ['Fill percentage', `${s.fill_pct}%`],
+                ['Opens', s.opens],
+                ['Series total', s.series_total]
+            ].map(([label, value]) => `<tr><td>${label}</td><td>${value}</td></tr>`).join('');
+            if (barChart) barChart.destroy();
+            barChart = new Chart(document.getElementById('barChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Strike %', 'Spare %', 'Single-Pin %', 'Split Conv. %', 'Fill %'],
+                    datasets: [{
+                        label: 'Key Rates',
+                        data: [s.strike_pct, s.spare_pct, s.single_pin_pct, s.split_pct, s.fill_pct],
+                        backgroundColor: [
+                            'rgba(11, 92, 122, 0.82)',
+                            'rgba(22, 128, 151, 0.82)',
+                            'rgba(57, 151, 142, 0.82)',
+                            'rgba(191, 146, 77, 0.82)',
+                            'rgba(143, 103, 47, 0.82)'
+                        ],
+                        borderRadius: 10,
+                        borderSkipped: false
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Key Performance Rates'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: {
+                                callback(value) {
+                                    return `${value}%`;
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            }
+                        }
+                    }
+                }
+            });
+            if (radarChart) radarChart.destroy();
+            radarChart = new Chart(document.getElementById('radarChart'), {
+                type: 'radar',
+                data: {
+                    labels: ['Strike', 'Spare', 'Single-Pin', 'Split Conv.', 'Fill'],
+                    datasets: [{
+                        label: 'Performance Shape',
+                        data: [s.strike_pct, s.spare_pct, s.single_pin_pct, s.split_pct, s.fill_pct],
+                        backgroundColor: 'rgba(11, 92, 122, 0.16)',
+                        borderColor: '#0b5c7a',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#0b5c7a',
+                        pointRadius: 3
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Performance Shape Overview'
+                        }
+                    },
+                    scales: {
+                        r: {
+                            suggestedMin: 0,
+                            suggestedMax: 100,
+                            ticks: {
+                                stepSize: 20,
+                                backdropColor: 'transparent'
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+            const t = await AppShell.fetchJson('/api/trend?email=' + encodeURIComponent(selectedEmail));
+            const tournamentTitles = t.map((d) => formatTournamentTitle(d.tournament_name || d.label));
+            if (trendChart) trendChart.destroy();
+            trendChart = new Chart(document.getElementById('trendChart'), {
+                type: 'line',
+                data: {
+                    labels: t.map(d => formatTournamentLabel(d.tournament_name || d.label)),
+                    datasets: [{
+                        label: 'Average Score',
+                        data: t.map(d => d.avg_score),
+                        borderColor: '#0b5c7a',
+                        backgroundColor: 'rgba(11, 92, 122, 0.12)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#0b5c7a',
+                        pointRadius: 4,
+                        fill: true,
+                        tension: 0.28
+                    }]
+                },
+                options: {
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        title: {
+                            display: true,
+                            text: 'Tournament Scoring Trend'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                title(items) {
+                                    return tournamentTitles[items[0].dataIndex];
+                                },
+                                label(item) {
+                                    return `Average Score: ${item.formattedValue}`;
+                                },
+                                afterLabel(item) {
+                                    const source = t[item.dataIndex]?.tournament_name || '';
+                                    const parts = splitTournamentLabel(source);
+                                    return parts.date ? `Date: ${parts.date}` : '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: {
+                                autoSkip: false,
+                                maxRotation: 0,
+                                minRotation: 0,
+                                font: {
+                                    size: 9
+                                },
+                                padding: 10
+                            },
+                            grid: {
+                                display: false
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Average Score'
+                            }
+                        }
+                    }
+                }
+            });
+            document.getElementById('statsStatus').innerText = 'Updated';
+        }
+        function getInsight(s) {
+            if (s.spare_pct >= 75) return 'Spare shooting is carrying your scoring pace.';
+            if (s.strike_pct >= 55) return 'Your strike pace is trending strong.';
+            return 'Next scoring jump likely comes from spare conversion.';
+        }
+
+        async function exportStats() {
+            window.location.href = '/api/stats/export?email=' + encodeURIComponent(selectedEmail);
+        }
+
+        async function runScrape() {
+            document.getElementById('statsStatus').innerText = 'Importing';
+            await AppShell.fetchJson('/run-scrape?email=' + encodeURIComponent(selectedEmail), { method: 'GET' });
+            await load();
+        }
+
+        async function loadCoachPlayers() {
+            const data = await AppShell.fetchJson('/api/users');
+            const players = data.users.filter((user) => user.role === 'player');
+            const select = document.getElementById('playerStatsSelect');
+            select.innerHTML = players.map((player) => `
+                <option value="${player.email}">${player.name} • ${player.email}</option>
+            `).join('');
+            select.addEventListener('change', () => {
+                selectedEmail = select.value;
+                load();
+            });
+            selectedEmail = select.value || currentUser.email;
+        }
+
+        AppShell.init({ active: 'statistics' }).then((user) => {
+            currentUser = user;
+            selectedEmail = user.email;
+            if (user.role === 'coach') {
+                document.getElementById('coachStatsPicker').classList.remove('hidden');
+                loadCoachPlayers().then(load);
+                return;
+            }
+            load();
+        });
+    </script>
+</body></html>

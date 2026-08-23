@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Coach Admin</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="mount-icon-192.png">
+    <meta name="theme-color" content="#0b5c7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PinPoint Bowling">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <script src="pwa.js"></script>
+    <script src="app-shell.js"></script>
+</head>
+
+<body class="dashboard-page">
+    <div class="content-shell">
+        <section class="panel">
+            <span class="eyebrow">Coach Tools</span>
+            <h1>Account Management</h1>
+            <p>Create player accounts, promote access when needed, and reset roles for the team.</p>
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2>Coach Control Center</h2>
+            </div>
+            <div class="table-actions">
+                <a class="ghost-button" href="/scheduling">Manage Meeting Times</a>
+                <a class="ghost-button" href="/contacts">Update Team Directory</a>
+                <a class="ghost-button" href="/arsenal">Review Player Arsenal</a>
+                <a class="ghost-button" href="/statistics">Run Statistics Review</a>
+                <a class="ghost-button" href="/logging">Review Logged Games</a>
+            </div>
+        </section>
+
+        <section class="panel split-grid">
+            <div class="stack admin-create-panel">
+                <div>
+                    <h2>Create Account</h2>
+                    <form id="createUserForm" class="form-grid">
+                        <div>
+                            <label for="newName">Name</label>
+                            <input id="newName" required>
+                        </div>
+                        <div>
+                            <label for="newEmail">Email</label>
+                            <input id="newEmail" type="email" required>
+                        </div>
+                        <div>
+                            <label for="newPassword">Temporary Password</label>
+                            <input id="newPassword" type="password" required>
+                        </div>
+                        <div>
+                            <label for="newRole">Role</label>
+                            <select id="newRole">
+                                <option value="player">Player</option>
+                                <option value="coach">Coach</option>
+                            </select>
+                        </div>
+                        <div class="full table-actions">
+                            <button type="submit">Create Account</button>
+                            <span id="adminStatus" class="muted"></span>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        </section>
+
+        <section class="panel">
+            <div class="panel-header">
+                <h2>Team Accounts</h2>
+                <button class="ghost-button" type="button" onclick="loadUsers()">Refresh</button>
+            </div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Created</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        async function loadUsers() {
+            const data = await AppShell.fetchJson('/api/users');
+            document.getElementById('userTableBody').innerHTML = data.users.map((user) => `
+                <tr>
+                    <td>${user.name}</td>
+                    <td>${user.email}</td>
+                    <td>${user.role}</td>
+                    <td>${new Date(user.createdAt).toLocaleDateString()}</td>
+                    <td>${user.role === 'player' ? `<button type="button" class="ghost-button" data-delete-user="${user.id}">Delete</button>` : ''}</td>
+                </tr>
+            `).join('');
+        }
+
+        async function deleteUser(userId) {
+            await AppShell.fetchJson(`/api/users/${encodeURIComponent(userId)}`, {
+                method: 'DELETE'
+            });
+            loadUsers();
+        }
+
+        document.getElementById('createUserForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            try {
+                await AppShell.fetchJson('/api/users', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        name: document.getElementById('newName').value,
+                        email: document.getElementById('newEmail').value,
+                        password: document.getElementById('newPassword').value,
+                        role: document.getElementById('newRole').value
+                    })
+                });
+                document.getElementById('adminStatus').textContent = 'Account created successfully.';
+                document.getElementById('createUserForm').reset();
+                loadUsers();
+            } catch (error) {
+                document.getElementById('adminStatus').textContent = error.message;
+                document.getElementById('adminStatus').className = 'error-text';
+            }
+        });
+
+        document.getElementById('userTableBody').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-delete-user]');
+            if (!button) return;
+            deleteUser(button.dataset.deleteUser).catch((error) => {
+                document.getElementById('adminStatus').textContent = error.message || 'Could not remove account.';
+                document.getElementById('adminStatus').className = 'error-text';
+            });
+        });
+
+        AppShell.init({ active: 'admin', role: 'coach' }).then(loadUsers);
+    </script>
+</body>
+
+</html>

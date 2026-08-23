@@ -1,0 +1,30 @@
+[
+  {
+    "id": "contact_seed_alyssa",
+    "name": "Alyssa Balest",
+    "role": "Player",
+    "email": "a.r.balest@email.msmary.edu",
+    "phone": "555-0123",
+    "studentId": "202600123",
+    "usbcId": "987654321",
+    "emergencyContact": "Parent - 555-0101"
+  },
+  {
+    "id": "contact_seed_olivia",
+    "name": "Olivia Farwell",
+    "role": "Head Coach",
+    "email": "o.l.farwell@msmary.edu",
+    "phone": "555-9876",
+    "emergencyContact": "Athletics Office - 555-1000"
+  },
+  {
+    "id": "contact_04fef1323b065123",
+    "name": "John",
+    "role": "Doe",
+    "email": "john.doe@email.msmary.edu",
+    "phone": "123-456-7890",
+    "studentId": "82947462",
+    "usbcId": "9276547484",
+    "emergencyContact": "John"
+  }
+]

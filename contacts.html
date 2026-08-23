@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Contact Directory</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="mount-icon-192.png">
+    <meta name="theme-color" content="#0b5c7a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="PinPoint Bowling">
+    <meta http-equiv="Cache-Control" content="no-store, no-cache, must-revalidate">
+    <script src="pwa.js"></script>
+    <script src="app-shell.js"></script>
+</head>
+
+<body class="contacts-page">
+    <div class="content-shell">
+        <section class="panel">
+            <div class="panel-header">
+                <div>
+                    <span class="eyebrow">Contacts</span>
+                    <h1>Team Contact Directory</h1>
+                </div>
+                <div class="pill" id="contactCount">0 contacts</div>
+            </div>
+            <hr>
+
+            <label><b>Search Contacts:</b></label>
+            <input type="text" id="searchBox" onkeyup="filterContacts()"
+                placeholder="Search names, roles, email, phone, or emergency contacts...">
+
+            <div class="table-actions">
+                <button class="ghost-button" type="button" onclick="copyCoachEmail()">Copy Coach Email</button>
+                <button class="secondary-button" type="button" onclick="resetContactSearch()">Reset Search</button>
+            </div>
+        </section>
+
+        <section class="panel hidden" id="coachContactPanel">
+            <h2>Add Directory Entry</h2>
+            <form id="contactForm" class="form-grid">
+                <div>
+                    <label for="contactName">Name</label>
+                    <input id="contactName" required>
+                </div>
+                <div>
+                    <label for="contactRole">Role</label>
+                    <input id="contactRole" required>
+                </div>
+                <div>
+                    <label for="contactEmail">Email</label>
+                    <input id="contactEmail" type="email" required>
+                </div>
+                <div>
+                    <label for="contactPhone">Phone</label>
+                    <input id="contactPhone" required>
+                </div>
+                <div>
+                    <label for="contactStudentId">Student ID</label>
+                    <input id="contactStudentId" required>
+                </div>
+                <div>
+                    <label for="contactUsbcId">USBC ID</label>
+                    <input id="contactUsbcId" required>
+                </div>
+                <div class="full">
+                    <label for="emergencyContact">Emergency Contact</label>
+                    <input id="emergencyContact" required>
+                </div>
+                <div class="full">
+                    <button type="submit">Add Contact</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel">
+            <table id="contactTable">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Role</th>
+                        <th>Email</th>
+                        <th>Phone</th>
+                        <th>Student ID</th>
+                        <th>USBC ID</th>
+                        <th>Emergency Contact</th>
+                        <th id="contactActionsHeader" class="hidden">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="contactBody"></tbody>
+            </table>
+        </section>
+    </div>
+
+    <script>
+        let contacts = [];
+        let currentUser;
+
+        function showIdValue(contact, key) {
+            return String(contact.role || '').toLowerCase().includes('coach') ? '-' : (contact[key] || '-');
+        }
+
+        function canDeleteContact(contact) {
+            return currentUser?.role === 'coach' && !String(contact.role || '').toLowerCase().includes('coach');
+        }
+
+        function renderContacts(items = contacts) {
+            document.getElementById('contactBody').innerHTML = items.map((contact) => `
+                <tr>
+                    <td>${contact.name}</td>
+                    <td>${contact.role}</td>
+                    <td><a href="mailto:${contact.email}">${contact.email}</a></td>
+                    <td><a href="tel:${String(contact.phone).replace(/\D/g, '')}">${contact.phone}</a></td>
+                    <td>${showIdValue(contact, 'studentId')}</td>
+                    <td>${showIdValue(contact, 'usbcId')}</td>
+                    <td>${contact.emergencyContact}</td>
+                    <td>${canDeleteContact(contact) ? `<button type="button" class="ghost-button" data-delete-contact="${contact.id}">Delete</button>` : ''}</td>
+                </tr>
+            `).join('');
+            document.getElementById('contactCount').innerText = `${items.length} contact${items.length === 1 ? '' : 's'}`;
+            document.getElementById('contactActionsHeader').classList.toggle('hidden', currentUser?.role !== 'coach');
+        }
+
+        function filterContacts() {
+            const input = document.getElementById('searchBox').value.toLowerCase();
+            const filtered = contacts.filter((contact) => Object.values(contact).join(' ').toLowerCase().includes(input));
+            renderContacts(filtered);
+        }
+
+        function copyCoachEmail() {
+            navigator.clipboard.writeText('o.l.farwell@msmary.edu');
+            document.getElementById('contactCount').innerText = 'Coach email copied';
+        }
+
+        function resetContactSearch() {
+            document.getElementById('searchBox').value = '';
+            renderContacts();
+        }
+
+        async function loadContacts() {
+            const data = await AppShell.fetchJson('/api/contacts');
+            contacts = data.contacts;
+            renderContacts();
+        }
+
+        async function deleteContact(contactId) {
+            await AppShell.fetchJson(`/api/contacts/${encodeURIComponent(contactId)}`, {
+                method: 'DELETE'
+            });
+            contacts = contacts.filter((contact) => contact.id !== contactId);
+            renderContacts();
+        }
+
+        document.getElementById('contactForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            await AppShell.fetchJson('/api/contacts', {
+                method: 'POST',
+                body: JSON.stringify({
+                    name: document.getElementById('contactName').value,
+                    role: document.getElementById('contactRole').value,
+                    email: document.getElementById('contactEmail').value,
+                    phone: document.getElementById('contactPhone').value,
+                    studentId: document.getElementById('contactStudentId').value,
+                    usbcId: document.getElementById('contactUsbcId').value,
+                    emergencyContact: document.getElementById('emergencyContact').value
+                })
+            });
+            document.getElementById('contactForm').reset();
+            loadContacts();
+        });
+
+        document.getElementById('contactBody').addEventListener('click', (event) => {
+            const button = event.target.closest('[data-delete-contact]');
+            if (!button) return;
+            deleteContact(button.dataset.deleteContact).catch(() => {
+                document.getElementById('contactCount').innerText = 'Could not remove contact';
+            });
+        });
+
+        AppShell.init({ active: 'contacts' }).then((user) => {
+            currentUser = user;
+            document.getElementById('coachContactPanel').classList.toggle('hidden', user.role !== 'coach');
+            loadContacts();
+        });
+    </script>
+</body>
+
+</html>
